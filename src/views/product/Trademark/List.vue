@@ -47,7 +47,11 @@
             @click="editTrademark(row)"
             >修改</el-button
           >
-          <el-button type="primary" size="mini" icon="el-icon-delete"
+          <el-button
+            type="primary"
+            size="mini"
+            icon="el-icon-delete"
+            @click="deleteTrademark(row)"
             >删除</el-button
           >
         </template>
@@ -84,13 +88,13 @@
 
     <!-- 对话框 -->
     <el-dialog title="添加品牌" :visible.sync="dialogFormVisible">
-      <el-form style="width:80%">
-        <el-form-item label="活动名称" label-width="100px">
+      <el-form style="width:80%" :model="tmFrom" :rules="rules" ref="tmFrom">
+        <el-form-item label="活动名称" label-width="100px" prop="tmName">
           <el-input autocomplete="off" v-model="tmFrom.tmName"></el-input>
         </el-form-item>
 
         <!-- 上传 -->
-        <el-form-item label="品牌LOGO" label-width="100px">
+        <el-form-item label="品牌LOGO" label-width="100px" prop="logoUrl">
           <el-upload
             class="avatar-uploader"
             action="/dev-api/admin/product/fileUpload"
@@ -118,6 +122,15 @@
 export default {
   name: "Trademark",
   data() {
+    //表单验证自定义校验规则
+    var validateTmName = (rule, value, callback) => {
+      if (value.length < 2 || value.length > 10) {
+        callback(new Error("长度在 2 到 10 个字符"));
+      } else {
+        callback();
+      }
+    };
+
     return {
       page: 1,
       limit: 3,
@@ -127,6 +140,20 @@ export default {
       tmFrom: {
         logoUrl: "",
         tmName: ""
+      },
+      rules: {
+        tmName: [
+          { required: true, message: "请输入品牌名称", trigger: "blur" },
+          //第二个规则使用自定义写法
+          { validator: validateTmName, trigger: "change" }
+          // {
+          //   min: 2,
+          //   max: 10,
+          //   message: "长度在 2 到 10 个字符",
+          //   trigger: "change"
+          // }
+        ],
+        logoUrl: [{ required: true, message: "请选择上传图片" }]
       }
     };
   },
@@ -178,27 +205,38 @@ export default {
     },
 
     //添加/修改后点击确认
-    async addOrUpdate() {
-      try {
-        const re = await this.$api.trademark.addOrUpdate(this.tmFrom);
-        if (re.code === 20000 || re.code === 200) {
-          this.$message.success(
-            this.tmFrom.id ? "修改品牌成功" : "添加品牌成功"
-          );
+    addOrUpdate() {
+      //表单整体校验
+      this.$refs.tmFrom.validate(async valid => {
+        if (valid) {
+          //验证成功后发请求
+          try {
+            const re = await this.$api.trademark.addOrUpdate(this.tmFrom);
+            if (re.code === 20000 || re.code === 200) {
+              this.$message.success(
+                this.tmFrom.id ? "修改品牌成功" : "添加品牌成功"
+              );
 
-          //成功后需要重新发送请求，page如果是添加的话就是1，page如果是修改的话就是当前页面
-          this.getPageList(this.tmFrom.id ? this.page : 1);
+              //成功后需要重新发送请求，page如果是添加的话就是1，page如果是修改的话就是当前页面
+              this.getPageList(this.tmFrom.id ? this.page : 1);
 
-          // 关闭对话框
-          this.dialogFormVisible = false;
+              // 关闭对话框
+              this.dialogFormVisible = false;
+            } else {
+              this.$message.error(
+                this.tmFrom.id ? "修改品牌失败" : "添加品牌失败"
+              );
+            }
+          } catch (e) {
+            this.$message.error(
+              this.tmFrom.id ? "请求修改品牌失败" : "请求添加品牌失败"
+            );
+          }
         } else {
-          this.$message.error(this.tmFrom.id ? "修改品牌失败" : "添加品牌失败");
+          this.$message.error("请核对格式！");
+          return false;
         }
-      } catch (e) {
-        this.$message.error(
-          this.tmFrom.id ? "请求修改品牌失败" : "请求添加品牌失败"
-        );
-      }
+      });
     },
 
     //上传图片成功的回调函数
@@ -209,6 +247,7 @@ export default {
       //我们需要的是网络地址
       this.tmFrom.logoUrl = res.data;
     },
+
     //对图片做限制的回调函数
     beforeAvatarUpload(file) {
       const isJPGOrPNG =
@@ -222,6 +261,38 @@ export default {
         this.$message.error("上传头像图片大小不能超过 2MB!");
       }
       return isJPGOrPNG && isLt2M;
+    },
+
+    //点击删除品牌时调用
+    deleteTrademark(row) {
+      this.$confirm(`你确定要删除${row.tmName}吗？`, "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(async () => {
+          try {
+            const re = await this.$api.trademark.delete(row.id);
+            if (re.code === 20000 || re.code === 200) {
+              this.$message.success("删除品牌成功");
+
+              //重新请求数据,如果最后一页只有一条数据点击删除时页面要跳到上一张
+              this.getPageList(
+                this.pageList.length > 1 ? this.page : this.page - 1
+              );
+            } else {
+              this.$message.error("删除品牌失败");
+            }
+          } catch (e) {
+            this.$message.error("请求删除品牌失败");
+          }
+        })
+        .catch(() => {
+          this.$message({
+            type: "info",
+            message: "已取消删除"
+          });
+        });
     }
   }
 };
