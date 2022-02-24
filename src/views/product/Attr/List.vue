@@ -221,6 +221,9 @@ export default {
         if (re.code === 20000 || re.code === 200) {
           this.$message.success("保存属性成功");
           this.isShowList = true;
+
+          //修改数据后重新请求数据
+          this.getAttrList();
         } else {
           this.$message.error("保存属性失败");
         }
@@ -232,7 +235,7 @@ export default {
     //点击修改
     updateAttrList(row) {
       this.isShowList = false;
-      
+
       // this.attrForm = {...row} //这个是浅拷贝，基本数据可以，对象数据不行，得深拷贝
       this.attrForm = JSON.parse(JSON.stringify(row));
     }

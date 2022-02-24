@@ -16,7 +16,7 @@
 
       <el-table-column
         prop="tmName"
-        :label="tmFrom.id ? '添加品牌' : '品牌名称'"
+        :label="tmForm.id ? '添加品牌' : '品牌名称'"
         align="center"
         width="width"
       >
@@ -48,7 +48,7 @@
             >修改</el-button
           >
           <el-button
-            type="primary"
+            type="danger"
             size="mini"
             icon="el-icon-delete"
             @click="deleteTrademark(row)"
@@ -88,9 +88,9 @@
 
     <!-- 对话框 -->
     <el-dialog title="添加品牌" :visible.sync="dialogFormVisible">
-      <el-form style="width:80%" :model="tmFrom" :rules="rules" ref="tmFrom">
+      <el-form style="width:80%" :model="tmForm" :rules="rules" ref="tmForm">
         <el-form-item label="活动名称" label-width="100px" prop="tmName">
-          <el-input autocomplete="off" v-model="tmFrom.tmName"></el-input>
+          <el-input autocomplete="off" v-model="tmForm.tmName"></el-input>
         </el-form-item>
 
         <!-- 上传 -->
@@ -102,7 +102,7 @@
             :on-success="handleAvatarSuccess"
             :before-upload="beforeAvatarUpload"
           >
-            <img v-if="tmFrom.logoUrl" :src="tmFrom.logoUrl" class="avatar" />
+            <img v-if="tmForm.logoUrl" :src="tmForm.logoUrl" class="avatar" />
             <i v-else class="el-icon-plus avatar-uploader-icon"></i>
             <div class="el-upload__tip" slot="tip">
               只能上传jpg/png文件，且不超过2MB
@@ -123,7 +123,7 @@ export default {
   name: "Trademark",
   data() {
     //表单验证自定义校验规则
-    var validateTmName = (rule, value, callback) => {
+    let validateTmName = (rule, value, callback) => {
       if (value.length < 2 || value.length > 10) {
         callback(new Error("长度在 2 到 10 个字符"));
       } else {
@@ -137,7 +137,7 @@ export default {
       pageList: [],
       total: 0,
       dialogFormVisible: false,
-      tmFrom: {
+      tmForm: {
         logoUrl: "",
         tmName: ""
       },
@@ -194,42 +194,42 @@ export default {
       this.dialogFormVisible = true;
 
       //每次点击添加时都要清空数据
-      this.tmFrom.logoUrl = "";
-      this.tmFrom.tmName = "";
+      this.tmForm.logoUrl = "";
+      this.tmForm.tmName = "";
     },
 
     //点击修改按钮
     editTrademark(row) {
       this.dialogFormVisible = true;
-      this.tmFrom = { ...row };
+      this.tmForm = { ...row };
     },
 
     //添加/修改后点击确认
     addOrUpdate() {
       //表单整体校验
-      this.$refs.tmFrom.validate(async valid => {
+      this.$refs.tmForm.validate(async valid => {
         if (valid) {
           //验证成功后发请求
           try {
-            const re = await this.$api.trademark.addOrUpdate(this.tmFrom);
+            const re = await this.$api.trademark.addOrUpdate(this.tmForm);
             if (re.code === 20000 || re.code === 200) {
               this.$message.success(
-                this.tmFrom.id ? "修改品牌成功" : "添加品牌成功"
+                this.tmForm.id ? "修改品牌成功" : "添加品牌成功"
               );
 
               //成功后需要重新发送请求，page如果是添加的话就是1，page如果是修改的话就是当前页面
-              this.getPageList(this.tmFrom.id ? this.page : 1);
+              this.getPageList(this.tmForm.id ? this.page : 1);
 
               // 关闭对话框
               this.dialogFormVisible = false;
             } else {
               this.$message.error(
-                this.tmFrom.id ? "修改品牌失败" : "添加品牌失败"
+                this.tmForm.id ? "修改品牌失败" : "添加品牌失败"
               );
             }
           } catch (e) {
             this.$message.error(
-              this.tmFrom.id ? "请求修改品牌失败" : "请求添加品牌失败"
+              this.tmForm.id ? "请求修改品牌失败" : "请求添加品牌失败"
             );
           }
         } else {
@@ -245,7 +245,7 @@ export default {
       // this.imageUrl = URL.createObjectURL(file.raw);
 
       //我们需要的是网络地址
-      this.tmFrom.logoUrl = res.data;
+      this.tmForm.logoUrl = res.data;
     },
 
     //对图片做限制的回调函数
