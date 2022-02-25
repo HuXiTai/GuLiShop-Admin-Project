@@ -1,6 +1,6 @@
 <template>
   <el-card style="margin-top:20px">
-    <el-form :inline="true" class="demo-form-inline">
+    <el-form :inline="true" class="demo-form-inline" :disabled="!isShowList">
       <el-form-item label="一级分类">
         <el-select
           placeholder="--请选择--"
@@ -52,6 +52,7 @@
 <script>
 export default {
   name: "CategorySelector",
+  props: ["isShowList"],
   data() {
     return {
       category1List: [],

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <CategorySelector @getCategory="getCategory" />
+    <CategorySelector @getCategory="getCategory" :isShowList="isShowList" />
 
     <el-card style="margin-top:20px">
       <!-- 显示属性列表页 -->
@@ -44,12 +44,18 @@
                 icon="el-icon-edit"
                 @click="updateAttrList(row)"
               />
-              <HintButton
-                title="删除"
-                type="danger"
-                size="mini"
-                icon="el-icon-delete"
-              />
+              <el-popconfirm
+                :title="`您确定要删除${row.attrName}属性吗?`"
+                @onConfirm="deleteAttr(row)"
+              >
+                <HintButton
+                  slot="reference"
+                  title="删除"
+                  type="danger"
+                  size="mini"
+                  icon="el-icon-delete"
+                />
+              </el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
@@ -85,12 +91,24 @@
 
           <el-table-column prop="prop" label="属性值名称" width="width">
             <template v-slot="{ row, $index }">
+              <!-- 编辑模式 -->
               <el-input
                 v-if="row.isEdit"
                 placeholder="请输入属性值名称"
                 v-model="row.valueName"
+                @blur="toLook(row)"
+                @keyup.enter.native="toLook(row)"
+                :ref="$index"
+                size="mini"
               ></el-input>
-              <span v-else>{{ row.valueName }}</span>
+
+              <!-- 查看模式 -->
+              <span
+                v-else
+                @click="toEdit(row, $index)"
+                style="display:block;width:100%"
+                >{{ row.valueName }}</span
+              >
             </template>
           </el-table-column>
 
@@ -101,17 +119,28 @@
             align="center"
           >
             <template v-slot="{ row, $index }">
-              <HintButton
-                title="删除属性值"
-                type="danger"
-                size="mini"
-                icon="el-icon-delete"
-              ></HintButton>
+              <el-popconfirm
+                :title="`您确定删除${row.valueName}吗`"
+                @onConfirm="deleteAttrValue($index)"
+              >
+                <HintButton
+                  slot="reference"
+                  title="删除属性值"
+                  type="danger"
+                  size="mini"
+                  icon="el-icon-delete"
+                ></HintButton>
+              </el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
 
-        <el-button type="primary" @click="keepAttrList">保存</el-button>
+        <el-button
+          type="primary"
+          @click="keepAttrList"
+          :disabled="!attrForm.attrValueList.length"
+          >保存</el-button
+        >
         <el-button @click="cancel">取消</el-button>
       </div>
     </el-card>
@@ -212,13 +241,34 @@ export default {
         //而这里为数组添加值时用到的是push，所以添加的所有属性都会有响应式
         isEdit: true
       });
+
+      //添加自动获取焦点的逻辑
+      this.$nextTick(() => {
+        this.$refs[this.attrForm.attrValueList.length - 1].focus();
+      });
     },
 
     //保存数据时调用
     async keepAttrList() {
+      //1：收集参数
+
+      //2：整理参数
+      //-1、属性值名称如果为空串，从属性值列表当中去除
+      //-2、属性值当中去除isEdit属性
+      this.attrForm.attrValueList = this.attrForm.attrValueList.filter(item => {
+        delete item.isEdit;
+        return item.valueName.trim();
+      });
+      //-3、属性值列表如果没有属性值，不发请求
+      if (!this.attrForm.attrValueList.length) {
+        this.$message.error("属性的属性值不能为空!");
+        return;
+      }
+      //3：发请求
       try {
         const re = await this.$api.attr.addOrUpdate(this.attrForm);
         if (re.code === 20000 || re.code === 200) {
+          //4：成功
           this.$message.success("保存属性成功");
           this.isShowList = true;
 
@@ -228,6 +278,7 @@ export default {
           this.$message.error("保存属性失败");
         }
       } catch (e) {
+        //5：失败
         this.$message.error("请求保存属性失败");
       }
     },
@@ -244,6 +295,60 @@ export default {
       this.attrForm.attrValueList.forEach(item => {
         this.$set(item, "isEdit", false);
       });
+    },
+
+    //点击添加/修改里属性值的span时
+    toEdit(row, $index) {
+      row.isEdit = true;
+      // 让当前点击的这个span切换为input的时候自动获取焦点
+      this.$nextTick(() => {
+        //等待页面最近一次更新完成之后，去执行回调函数
+        this.$refs[$index].focus();
+      });
+    },
+
+    //添加/修改里属性值的input失去焦点或按下enter键时
+    toLook(row) {
+      // 1、数据是不是空的
+      if (!row.valueName.trim()) {
+        return (row.valueName = "");
+      }
+
+      // 2、除了自己以外，输入的数据是不是和其它的属性值名称重复
+      const isRepeat = this.attrForm.attrValueList.some(item => {
+        if (item !== row) {
+          return item.valueName === row.valueName;
+        }
+      });
+
+      if (isRepeat) {
+        this.$message.error("输入的属性值不能重名!");
+        row.valueName = "";
+        return;
+      }
+
+      row.isEdit = false;
+    },
+
+    //点击删除某一项属性值时
+    deleteAttrValue($index) {
+      this.attrForm.attrValueList.splice($index, 1);
+    },
+
+    //点击删除属性时
+    async deleteAttr(row) {
+      try {
+        const re = await this.$api.attr.deleteList(row.id);
+        if (re.code === 20000 || re.code === 200) {
+          this.$message.success("删除属性成功");
+          //修改数据后重新请求数据
+          this.getAttrList();
+        } else {
+          this.$message.error("删除属性失败");
+        }
+      } catch (e) {
+        this.$message.error("请求删除属性失败");
+      }
     }
   }
 };
