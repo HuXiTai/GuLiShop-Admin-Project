@@ -83,17 +83,14 @@
           <el-table-column type="index" label="序号" width="80" align="center">
           </el-table-column>
 
-          <el-table-column
-            prop="prop"
-            label="属性值名称"
-            width="width"
-            align="center"
-          >
+          <el-table-column prop="prop" label="属性值名称" width="width">
             <template v-slot="{ row, $index }">
               <el-input
+                v-if="row.isEdit"
                 placeholder="请输入属性值名称"
                 v-model="row.valueName"
               ></el-input>
+              <span v-else>{{ row.valueName }}</span>
             </template>
           </el-table-column>
 
@@ -210,7 +207,10 @@ export default {
     addAttrValue() {
       this.attrForm.attrValueList.push({
         attrId: this.attrForm.id,
-        valueName: ""
+        valueName: "",
+        //为了实现修改属性值时，属性值是一个span当点击时需要是一个input框，所以需要添加一个标记
+        //而这里为数组添加值时用到的是push，所以添加的所有属性都会有响应式
+        isEdit: true
       });
     },
 
@@ -238,6 +238,12 @@ export default {
 
       // this.attrForm = {...row} //这个是浅拷贝，基本数据可以，对象数据不行，得深拷贝
       this.attrForm = JSON.parse(JSON.stringify(row));
+
+      //为了实现修改属性值时，属性值是一个span当点击时需要是一个input框，所以需要添加一个标记
+      //而这里是给对象添加一个属性，没有响应式数据，因为早已过了vue添加代理和劫持的阶段，所以我们要使用到this.$set()或Vue.set()
+      this.attrForm.attrValueList.forEach(item => {
+        this.$set(item, "isEdit", false);
+      });
     }
   }
 };
