@@ -1,5 +1,5 @@
 <template>
-  <div>addSku</div>
+  <div>addSku123</div>
 </template>
 
 <script>

@@ -53,7 +53,7 @@
           <el-table-column prop="prop" label="属性名" width="150">
           </el-table-column>
 
-          <el-table-column prop="prop" label="属性值名称列表" width="width">
+          <el-table-column prop="prop" label="属性值名称列表" width="width"> 
           </el-table-column>
 
           <el-table-column prop="prop" label="操作" width="150">
