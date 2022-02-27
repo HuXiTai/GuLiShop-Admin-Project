@@ -37,7 +37,7 @@
                 icon="el-icon-edit"
                 size="mini"
                 title="修改SPU"
-                @click="updateSpu"
+                @click="updateSpu(row)"
               />
 
               <HintButton
@@ -77,7 +77,11 @@
       </div>
 
       <!-- 添加或修改spu页 -->
-      <addOrUpdateSpu v-show="isShowAddOrUpdate" />
+      <addOrUpdateSpu
+        ref="spu"
+        v-show="isShowAddOrUpdate"
+        :visible.sync="isShowAddOrUpdate"
+      />
 
       <!-- 添加sku页 -->
       <addSku v-show="isShowAddSku" />
@@ -104,7 +108,7 @@ export default {
       page: 1,
       limit: 3,
       total: 0,
-      isShowAddOrUpdate: true,
+      isShowAddOrUpdate: false,
       isShowAddSku: false
     };
   },
@@ -157,11 +161,17 @@ export default {
     //点击添加SPU
     addSpu() {
       this.isShowAddOrUpdate = true;
+
+      //点击添加SPU发送2个请求
+      this.$refs.spu.getAddInfo();
     },
 
     //点击修改SPU
-    updateSpu() {
+    updateSpu(row) {
       this.isShowAddOrUpdate = true;
+
+      //点击修改SPU发送4个请求
+      this.$refs.spu.getUpdateInfo(row);
     },
 
     //点击添加SKU

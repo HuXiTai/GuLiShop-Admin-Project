@@ -34,5 +34,10 @@ export default {
       url: `/admin/product/baseTrademark/${page}/${limit}`,
       method: "get"
     });
+  },
+
+  //获取所有品牌列表
+  getAllTrademarkList() {
+    return myAxios.get(`/admin/product/baseTrademark/getTrademarkList`);
   }
 };
