@@ -43,7 +43,7 @@
         </el-dialog>
       </el-form-item>
 
-      <el-form-item label="销售属性" label-width="100px">
+      <el-form-item label="销售属性">
         <el-select
           v-model="addSaleValueParam"
           :placeholder="
@@ -54,10 +54,10 @@
           style="margin-right:18px"
         >
           <el-option
-            v-for="item of unSelectedSaleAttrList"
-            :key="item.id"
-            :label="item.name"
-            :value="item"
+            v-for="unSelectedSaleAttr of unSelectedSaleAttrList"
+            :key="unSelectedSaleAttr.id"
+            :label="unSelectedSaleAttr.name"
+            :value="JSON.stringify(unSelectedSaleAttr)"
           ></el-option>
         </el-select>
         <el-button
@@ -80,10 +80,11 @@
           <el-table-column prop="prop" label="属性值名称列表" width="width">
             <template v-slot="{ row, $index }">
               <el-tag
-                v-for="item of row.spuSaleAttrValueList"
+                v-for="(item, index) of row.spuSaleAttrValueList"
                 :key="item.id"
                 closable
                 :disable-transitions="false"
+                @close="row.spuSaleAttrValueList.splice(index, 1)"
               >
                 {{ item.saleAttrValueName }}
               </el-tag>
@@ -119,6 +120,7 @@
                 icon="el-icon-delete"
                 title="删除销售属性"
                 size="mini"
+                @click="spuInfo.spuSaleAttrList.splice($index, 1)"
               />
             </template>
           </el-table-column>
@@ -126,8 +128,8 @@
       </el-form-item>
 
       <el-form-item label="">
-        <el-button type="primary">保存</el-button>
-        <el-button @click="$emit('update:visible', false)">取消</el-button>
+        <el-button type="primary" @click="keepSpu">保存</el-button>
+        <el-button @click="cancel">取消</el-button>
       </el-form-item>
     </el-form>
   </div>
@@ -136,6 +138,7 @@
 <script>
 export default {
   name: "addOrUpdateSpu",
+  props: ["category3Id"],
   data() {
     return {
       dialogImageUrl: "",
@@ -145,10 +148,8 @@ export default {
         description: "",
         spuImageList: [
           // {
-          //   id: 0,
-          //   imgName: "string",
-          //   imgUrl: "string",
-          //   spuId: 0
+          // imgName: "string",
+          // imgUrl: "string",
           // }
         ],
         spuName: "",
@@ -175,7 +176,7 @@ export default {
       spuImageList: [],
       trademarkList: [],
       baseSaleAttrList: [],
-      addSaleValueParam: null
+      addSaleValueParam: ""
     };
   },
   methods: {
@@ -192,10 +193,6 @@ export default {
     },
     //获取修改spu页面的4个请求获取初始化数据
     async getUpdateInfo(row) {
-      // this.spuInfo = {};
-      // this.spuImageList = [];
-      // this.trademarkList = [];
-      // this.baseSaleAttrList = [];
       //http://localhost:9528/dev-api/admin/product/getSpuById/6591
       //获取SPU详情信息
       try {
@@ -257,10 +254,6 @@ export default {
 
     //获取添加spu页面的2个请求获取初始化数据
     async getAddInfo() {
-      this.spuInfo = {};
-      this.spuImageList = [];
-      this.trademarkList = [];
-      this.baseSaleAttrList = [];
       //http://localhost:9528/dev-api/admin/product/baseTrademark/getTrademarkList
       //获取所有品牌列表
       try {
@@ -292,12 +285,12 @@ export default {
     addSaleAttr() {
       // this.spuInfo.spuSaleAttrList
       (this.spuInfo.spuSaleAttrList || []).push({
-        baseSaleAttrId: this.addSaleValueParam.id,
-        saleAttrName: this.addSaleValueParam.name,
+        baseSaleAttrId: JSON.parse(this.addSaleValueParam).id,
+        saleAttrName: JSON.parse(this.addSaleValueParam).name,
         spuSaleAttrValueList: []
       });
 
-      this.addSaleValueParam = null;
+      this.addSaleValueParam = "";
     },
 
     //点击添加销售属性值
@@ -339,6 +332,54 @@ export default {
       row.spuSaleAttrValueList.push({ saleAttrValueName, baseSaleAttrId });
       row.saleAttrValueName = "";
       row.isEdit = false;
+    },
+
+    //SPU的修改或添加的保存操作
+    async keepSpu() {
+      //收集数据
+      const { spuInfo, spuImageList, category3Id } = this;
+      //整理数据
+      // 1、整理图片数据结构
+      // imgName: "string",
+      // imgUrl: "string",
+      spuInfo.spuImageList = spuImageList.map(item => {
+        return {
+          imgName: item.name,
+          imgUrl: item.imgUrl || item.response.data
+        };
+      });
+      // 2、整理category3Id
+      spuInfo.category3Id = category3Id;
+      // 3、去掉所有销售属性身上不需要的属性
+      spuInfo.spuSaleAttrList.forEach(item => {
+        delete item.edit;
+        delete item.saleAttrValueName;
+      });
+      //发送请求
+      try {
+        const re = await this.$api.spu.addUpdate(spuInfo);
+        if (re.code === 20000 || re.code === 200) {
+          this.$message.success("SPU保存成功");
+          this.$emit("update:visible", false);
+          this.$emit("backSuccess", spuInfo.id);
+          //清除数据
+          Object.assign(this._data, this.$options.data());
+        } else {
+          this.$message.error("SPU保存失败");
+        }
+      } catch (e) {
+        this.$message.error("请求SPU保存失败");
+      }
+      //成功
+      //失败
+    },
+
+    //SPU修改或添加时取消
+    cancel() {
+      this.$emit("update:visible", false);
+
+      //清除数据
+      Object.assign(this._data, this.$options.data());
     }
   },
   computed: {

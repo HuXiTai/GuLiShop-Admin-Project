@@ -1,6 +1,7 @@
 <template>
   <div>
-    <CategorySelector @getCategory="getCategory" :isShowList="isShowList" />
+    <!-- !isShowAddOrUpdate && !isShowAddSku -->
+    <CategorySelector @getCategory="getCategory" :isShowList="true" />
 
     <el-card style="margin-top:20px">
       <!-- spu列表页 -->
@@ -46,13 +47,18 @@
                 size="mini"
                 title="查看SPU的SKU"
               />
-
-              <HintButton
-                type="danger"
-                icon="el-icon-delete"
-                size="mini"
-                title="删除SPU"
-              />
+              <el-popconfirm
+                :title="`您确定要删除${row.spuName}吗?`"
+                @onConfirm="deleteSpu(row)"
+              >
+                <HintButton
+                  slot="reference"
+                  type="danger"
+                  icon="el-icon-delete"
+                  size="mini"
+                  title="删除SPU"
+                />
+              </el-popconfirm>
             </template>
           </el-table-column>
         </el-table>
@@ -81,6 +87,8 @@
         ref="spu"
         v-show="isShowAddOrUpdate"
         :visible.sync="isShowAddOrUpdate"
+        :category3Id="category3Id"
+        @backSuccess="backSuccess"
       />
 
       <!-- 添加sku页 -->
@@ -103,13 +111,12 @@ export default {
       category1Id: "",
       category2Id: "",
       category3Id: "",
-      isShowList: true,
       spuList: [],
       page: 1,
       limit: 3,
       total: 0,
       isShowAddOrUpdate: false,
-      isShowAddSku: false
+      isShowAddSku: true
     };
   },
   methods: {
@@ -178,6 +185,30 @@ export default {
     addSku() {
       this.isShowAddSku = true;
       this.isShowAddOrUpdate = false;
+    },
+
+    //保存成功后需要重新请求数据，并根据添加或修改判断跳转到那一页
+    backSuccess(flag) {
+      if (flag) {
+        this.getSpuList(this.page);
+      } else {
+        this.getSpuList();
+      }
+    },
+
+    //点击删除spu
+    async deleteSpu(row) {
+      try {
+        const re = await this.$api.spu.remove(row.id);
+        if (re.code === 20000 || re.code === 200) {
+          this.$message.success(`${row.spuName}删除成功`);
+          this.getSpuList(this.spuList > 1 ? this.page : this.page - 1);
+        } else {
+          this.$message.error(`${row.spuName}删除失败`);
+        }
+      } catch (e) {
+        this.$message.error(`请求${row.spuName}删除失败`);
+      }
     }
   }
 };
