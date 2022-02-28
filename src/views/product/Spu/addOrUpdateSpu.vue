@@ -34,17 +34,18 @@
           :file-list="spuImageList"
           :on-preview="handlePictureCardPreview"
           :on-remove="handleRemove"
+          :on-success="handleSuccess"
         >
           <i class="el-icon-plus"></i>
         </el-upload>
-        <el-dialog>
-          <img width="100%" alt="" />
+        <el-dialog :visible.sync="dialogVisible">
+          <img width="100%" :src="dialogImageUrl" alt="" />
         </el-dialog>
       </el-form-item>
 
       <el-form-item label="销售属性" label-width="100px">
         <el-select
-          v-model="temp"
+          v-model="addSaleValueParam"
           :placeholder="
             unSelectedSaleAttrList.length
               ? `还有${unSelectedSaleAttrList.length}未选择`
@@ -56,10 +57,16 @@
             v-for="item of unSelectedSaleAttrList"
             :key="item.id"
             :label="item.name"
-            :value="item.id"
+            :value="item"
           ></el-option>
         </el-select>
-        <el-button type="primary" icon="el-icon-plus">添加销售属性</el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-plus"
+          @click="addSaleAttr"
+          :disabled="!addSaleValueParam"
+          >添加销售属性</el-button
+        >
       </el-form-item>
 
       <el-form-item label="">
@@ -84,10 +91,22 @@
                 @keyup.enter.native="handleInputConfirm"
                 @blur="handleInputConfirm"
                -->
-              <el-input class="input-new-tag" ref="saveTagInput" size="small">
+              <el-input
+                v-if="row.isEdit"
+                class="input-new-tag"
+                ref="saveTagInput"
+                size="small"
+                @blur="addSaleAttrValueComplete(row)"
+                @keyup.enter.native="addSaleAttrValueComplete(row)"
+                v-model="row.saleAttrValueName"
+              >
               </el-input>
               <!--  @click="showInput" -->
-              <el-button class="button-new-tag" size="small"
+              <el-button
+                v-else
+                class="button-new-tag"
+                size="small"
+                @click="addSaleAttrValue(row)"
                 >点击添加属性</el-button
               >
             </template>
@@ -119,21 +138,57 @@ export default {
   name: "addOrUpdateSpu",
   data() {
     return {
-      spuInfo: {},
+      dialogImageUrl: "",
+      dialogVisible: false,
+      spuInfo: {
+        category3Id: "",
+        description: "",
+        spuImageList: [
+          // {
+          //   id: 0,
+          //   imgName: "string",
+          //   imgUrl: "string",
+          //   spuId: 0
+          // }
+        ],
+        spuName: "",
+        spuSaleAttrList: [
+          // {
+          //   baseSaleAttrId: 0,
+          //   id: 0,
+          //   saleAttrName: "string",
+          //   spuId: 0,
+          //   spuSaleAttrValueList: [
+          //     {
+          //       baseSaleAttrId: 0,
+          //       id: 0,
+          //       isChecked: "string",
+          //       saleAttrName: "string",
+          //       saleAttrValueName: "string",
+          //       spuId: 0
+          //     }
+          //   ]
+          // }
+        ],
+        tmId: ""
+      },
       spuImageList: [],
       trademarkList: [],
       baseSaleAttrList: [],
-      temp: ""
+      addSaleValueParam: null
     };
   },
   methods: {
     //图片墙的函数
     handleRemove(file, fileList) {
-      console.log(file, fileList);
+      this.spuImageList = fileList;
     },
     handlePictureCardPreview(file) {
       this.dialogImageUrl = file.url;
       this.dialogVisible = true;
+    },
+    handleSuccess(_, __, fileList) {
+      this.spuImageList = fileList;
     },
     //获取修改spu页面的4个请求获取初始化数据
     async getUpdateInfo(row) {
@@ -231,6 +286,59 @@ export default {
       } catch (e) {
         this.$message.error("请求获取所有的销售属性列表失败");
       }
+    },
+
+    //点击添加销售属性
+    addSaleAttr() {
+      // this.spuInfo.spuSaleAttrList
+      (this.spuInfo.spuSaleAttrList || []).push({
+        baseSaleAttrId: this.addSaleValueParam.id,
+        saleAttrName: this.addSaleValueParam.name,
+        spuSaleAttrValueList: []
+      });
+
+      this.addSaleValueParam = null;
+    },
+
+    //点击添加销售属性值
+    addSaleAttrValue(row) {
+      //显示input框
+      this.$set(row, "isEdit", true);
+
+      //处理undefind.trim()的假报错
+      this.$set(row, "saleAttrValueName", "");
+
+      //自动聚焦
+      this.$nextTick(() => {
+        this.$refs.saveTagInput.focus();
+      });
+    },
+
+    //点击添加销售属性值时按下enter或失去焦点时
+    addSaleAttrValueComplete(row) {
+      const { saleAttrValueName, baseSaleAttrId } = row;
+
+      //判断是否为空
+      if (!saleAttrValueName.trim()) {
+        this.$message.error("输入的销售属性值名称不能为空!");
+        row.isEdit = false;
+        return (row.saleAttrValueName = "");
+      }
+
+      //判断是否有重复
+      const isRepeat = row.spuSaleAttrValueList.some(item => {
+        return item.saleAttrValueName === saleAttrValueName;
+      });
+
+      if (isRepeat) {
+        this.$message.error("输入的销售属性值名称不能重复!");
+        row.isEdit = false;
+        return (row.saleAttrValueName = "");
+      }
+
+      row.spuSaleAttrValueList.push({ saleAttrValueName, baseSaleAttrId });
+      row.saleAttrValueName = "";
+      row.isEdit = false;
     }
   },
   computed: {
