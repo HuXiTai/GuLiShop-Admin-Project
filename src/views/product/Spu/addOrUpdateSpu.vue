@@ -2,12 +2,17 @@
   <div>
     <el-form label-width="100px">
       <el-form-item label="SPU名称">
-        <el-input placeholder="SPU名称"></el-input>
+        <el-input placeholder="SPU名称" v-model="spuInfo.spuName"></el-input>
       </el-form-item>
 
       <el-form-item label="品牌">
-        <el-select placeholder="请选择品牌" value="1">
-          <el-option label="label" value="value"></el-option>
+        <el-select v-model="spuInfo.tmId" placeholder="请选择品牌" value="1">
+          <el-option
+            v-for="item of trademarkList"
+            :key="item.id"
+            :label="item.tmName"
+            :value="item.id"
+          ></el-option>
         </el-select>
       </el-form-item>
 
@@ -132,6 +137,10 @@ export default {
     },
     //获取修改spu页面的4个请求获取初始化数据
     async getUpdateInfo(row) {
+      // this.spuInfo = {};
+      // this.spuImageList = [];
+      // this.trademarkList = [];
+      // this.baseSaleAttrList = [];
       //http://localhost:9528/dev-api/admin/product/getSpuById/6591
       //获取SPU详情信息
       try {
@@ -193,6 +202,10 @@ export default {
 
     //获取添加spu页面的2个请求获取初始化数据
     async getAddInfo() {
+      this.spuInfo = {};
+      this.spuImageList = [];
+      this.trademarkList = [];
+      this.baseSaleAttrList = [];
       //http://localhost:9528/dev-api/admin/product/baseTrademark/getTrademarkList
       //获取所有品牌列表
       try {
@@ -229,7 +242,13 @@ export default {
     //     });
     //   });
     // }
-    unSelectedSaleAttrList() {return this.baseSaleAttrList.filter(item =>this.spuInfo.spuSaleAttrList.every(item1 => item1.saleAttrName !== item.name));}
+    unSelectedSaleAttrList() {
+      return this.baseSaleAttrList.filter(item =>
+        (this.spuInfo.spuSaleAttrList || []).every(
+          item1 => item1.saleAttrName !== item.name
+        )
+      );
+    }
   }
 };
 </script>
