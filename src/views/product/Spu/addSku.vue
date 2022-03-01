@@ -149,7 +149,7 @@ export default {
         weight: "",
         skuDesc: "",
 
-        //需要自己写代码收集
+        //3:需要自己写代码收集
         skuDefaultImg: "",
         skuAttrValueList: [
           // {
@@ -189,6 +189,7 @@ export default {
     //点击取消时
     cancelAddSku() {
       this.$emit("update:visible", false);
+      Object.assign(this._data, this.$options.data());  
     },
 
     //进入添加Sku页面需要发的三个初始化动态数据请求
@@ -241,12 +242,56 @@ export default {
     },
 
     //点击保存时
-    keepAddSku() {
+    async keepAddSku() {
       //收集数据
+      const { platAttr, saleAttr, turnImageList, spu, skuInfo } = this;
       //整理数据
+      // 1:父组件传递过来的
+      skuInfo.category3Id = spu.category3Id;
+      skuInfo.spuId = spu.id;
+      skuInfo.tmId = spu.tmId;
+
+      // 2:需要自己写代码收集
+      skuInfo.skuAttrValueList = platAttr.reduce((prev, item) => {
+        if (item.platParam) {
+          const [attrId, valueId] = item.platParam.split(":");
+          prev.push({ attrId, valueId });
+        }
+        return prev;
+      }, []);
+
+      skuInfo.skuSaleAttrValueList = saleAttr.reduce((prev, item) => {
+        if (item.saleParam) {
+          const [saleAttrId, saleAttrValueId] = item.saleParam.split(":");
+          prev.push({ saleAttrId, saleAttrValueId });
+        }
+        return prev;
+      }, []);
+
+      skuInfo.skuImageList = turnImageList.map(item => {
+        return {
+          imgName: item.imgName,
+          imgUrl: item.imgUrl,
+          isDefault: item.isDefault,
+          spuImgId: item.id
+        };
+      });
+
       //发送请求
-      //成功
-      //失败
+      try {
+        //成功
+        const re = await this.$api.sku.addUpdate(skuInfo);
+        if (re.code === 20000 || re.code === 200) {
+          this.$message.success("添加SKU成功");
+          this.$emit("update:visible", false);
+          Object.assign(this._data, this.$options.data());
+        } else {
+          this.$message.error("添加SKU失败");
+        }
+      } catch (e) {
+        //失败
+        this.$message.error("请求添加SKU失败");
+      }
     }
   }
 };

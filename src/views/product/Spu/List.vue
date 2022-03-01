@@ -1,7 +1,10 @@
 <template>
   <div>
     <!-- !isShowAddOrUpdate && !isShowAddSku -->
-    <CategorySelector @getCategory="getCategory" :isShowList="true" />
+    <CategorySelector
+      @getCategory="getCategory"
+      :isShowList="!isShowAddOrUpdate && !isShowAddSku"
+    />
 
     <el-card style="margin-top:20px">
       <!-- spu列表页 -->
@@ -46,6 +49,7 @@
                 icon="el-icon-info"
                 size="mini"
                 title="查看SPU的SKU"
+                @click="showSkuOfSpu(row)"
               />
               <el-popconfirm
                 :title="`您确定要删除${row.spuName}吗?`"
@@ -93,6 +97,42 @@
 
       <!-- 添加sku页 -->
       <addSku ref="sku" v-show="isShowAddSku" :visible.sync="isShowAddSku" />
+
+      <!-- 对话框 -->
+      <el-dialog
+        :before-close="dialogClose"
+        :title="`${spu.spuName}的SKU列表`"
+        :visible.sync="dialogTableVisible"
+      >
+        <el-table :data="skuList" v-loading="loading">
+          <el-table-column
+            property="skuName"
+            label="名称"
+            align="center"
+          ></el-table-column>
+
+          <el-table-column
+            property="price"
+            label="价格"
+            align="center"
+          ></el-table-column>
+
+          <el-table-column
+            property="weight"
+            label="重量"
+            align="center"
+          ></el-table-column>
+
+          <el-table-column property="name" label="默认图面" align="center">
+            <template v-slot="{ row, $index }">
+              <img
+                :src="row.skuDefaultImg"
+                alt=""
+                style="width:100px;height:100px"
+              /> </template
+          ></el-table-column>
+        </el-table>
+      </el-dialog>
     </el-card>
   </div>
 </template>
@@ -108,15 +148,19 @@ export default {
   },
   data() {
     return {
+      spu: {},
+      dialogTableVisible: false,
       category1Id: "",
       category2Id: "",
       category3Id: "",
       spuList: [],
+      skuList: [],
       page: 1,
       limit: 3,
       total: 0,
       isShowAddOrUpdate: false,
-      isShowAddSku: false
+      isShowAddSku: false,
+      loading: false
     };
   },
   methods: {
@@ -211,6 +255,34 @@ export default {
       } catch (e) {
         this.$message.error(`请求${row.spuName}删除失败`);
       }
+    },
+
+    //点击查看SPU的SKU列表
+    async showSkuOfSpu(spu) {
+      this.spu = spu;
+      this.dialogTableVisible = true;
+      this.loading = true;
+
+      //发送获取某个spu的sku列表
+      try {
+        const re = await this.$api.sku.getListBySpuId(spu.id);
+        if (re.code === 20000 || re.code === 200) {
+          this.skuList = re.data;
+        } else {
+          this.$message.error("获取spu的sku列表失败");
+        }
+      } catch (e) {
+        this.$message.error("请求获取spu的sku列表失败");
+      }
+
+      this.loading = false;
+    },
+
+    //dialog关闭之前,清空数据，也可以去重置我们的初始化数据
+    dialogClose() {
+      this.skuList = [];
+      this.loading = false;
+      this.dialogTableVisible = false;
     }
   }
 };
