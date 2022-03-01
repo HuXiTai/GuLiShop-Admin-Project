@@ -30,7 +30,7 @@
                 icon="el-icon-plus"
                 size="mini"
                 title="添加SKU"
-                @click="addSku"
+                @click="addSku(row)"
               />
 
               <HintButton
@@ -92,7 +92,7 @@
       />
 
       <!-- 添加sku页 -->
-      <addSku v-show="isShowAddSku" />
+      <addSku ref="sku" v-show="isShowAddSku" :visible.sync="isShowAddSku" />
     </el-card>
   </div>
 </template>
@@ -116,7 +116,7 @@ export default {
       limit: 3,
       total: 0,
       isShowAddOrUpdate: false,
-      isShowAddSku: true
+      isShowAddSku: false
     };
   },
   methods: {
@@ -182,9 +182,11 @@ export default {
     },
 
     //点击添加SKU
-    addSku() {
+    addSku(spu) {
       this.isShowAddSku = true;
-      this.isShowAddOrUpdate = false;
+
+      //调用组件里的初始化数据请求
+      this.$refs.sku.getInitData(spu, this.category1Id, this.category2Id);
     },
 
     //保存成功后需要重新请求数据，并根据添加或修改判断跳转到那一页
