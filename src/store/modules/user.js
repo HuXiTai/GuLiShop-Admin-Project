@@ -1,143 +1,101 @@
 import { login, logout, getInfo } from "@/api/user";
-import { getToken, setToken, removeToken } from "@/utils/auth";
-import { resetRouter } from "@/router";
+// import { getToken, setToken, removeToken } from "@/utils/auth";
+import {
+  resetRouter,
+  constantRoutes,
+  allAsyncRoutes,
+  anyRoute,
+  default as router
+} from "@/router";
+
+function filterAsyncRouters(allAsyncRoutes, routeNames) {
+  const asyncRoutes = allAsyncRoutes.filter(item => {
+    if (routeNames.includes(item.name)) {
+      if (item.children && item.children.length) {
+        item.children = filterAsyncRouters(item.children, routeNames);
+      }
+      return true;
+    }
+  });
+  return asyncRoutes;
+}
 
 const getDefaultState = () => {
   return {
-    token: getToken(),
+    token: localStorage.getItem("token_key"),
     name: "",
-    avatar: ""
+    avatar: "",
+    buttons: [],
+    roles: [],
+    routes: []
   };
 };
 
 const state = getDefaultState();
 
 const actions = {
-  // user login
-  // login({ commit }, userInfo) {
-  //   const { username, password } = userInfo;
-  //   return new Promise((resolve, reject) => {
-  //     login({ username: username.trim(), password: password })
-  //       .then(response => {
-  //         const { data } = response;
-  //         commit("SET_TOKEN", data.token);
-  //         setToken(data.token);
-  //         resolve();
-  //       })
-  //       .catch(error => {
-  //         reject(error);
-  //       });
-  //   });
-  // },
-
-  // user login 的async/await写法
-  async login(miniStore, userInfo) {
-    try {
-      const { username, password } = userInfo;
-      const re = await login({ username: username.trim(), password: password });
-      const { data } = re;
-      miniStore.commit("SET_TOKEN", data.token);
-      setToken(data.token);
+  async login({ commit }, userInfo) {
+    const { username, password } = userInfo;
+    const re = await login({ username: username.trim(), password: password });
+    if (re.code === 20000 || re.code === 200) {
+      commit("SET_TOKEN", re.data.token);
+      localStorage.setItem("token_key", re.data.token);
       return "ok";
-    } catch (e) {
-      return Promise.reject(e);
+    } else {
+      return Promise.reject(new Error("error"));
     }
   },
 
-  // get user info
-  getInfo({ commit, state }) {
-    return new Promise((resolve, reject) => {
-      getInfo(state.token)
-        .then(response => {
-          const { data } = response;
-
-          if (!data) {
-            return reject("Verification failed, please Login again.");
-          }
-
-          const { name, avatar } = data;
-
-          commit("SET_NAME", name);
-          commit("SET_AVATAR", avatar);
-          resolve(data);
-        })
-        .catch(error => {
-          reject(error);
-        });
-    });
+  async getInfo({ commit, state }) {
+    const re = await getInfo(state.token);
+    if (re.code === 20000 || re.code === 200) {
+      commit("SET_USERINFO", re.data);
+      commit("SET_ROUTERS", filterAsyncRouters(allAsyncRoutes, re.data.routes));
+    } else {
+      return Promise.reject(new Error("error"));
+    }
   },
 
-  //get user info 的async/await写法
-  // async getInfo(miniStore, { state }) {
-  //   try {
-  //     const re = await getInfo(state.token);
-  //     const { data } = re;
-
-  //     if (!data) {
-  //       return reject("Verification failed, please Login again.");
-  //     }
-
-  //     const { name, avatar } = data;
-
-  //     miniStore.commit("SET_NAME", name);
-  //     miniStore.commit("SET_AVATAR", avatar);
-  //     return data;
-  //   } catch (e) {
-  //     return Promise.reject(e);
-  //   }
-  // },
-
-  // user logout 的async/await写法
-  logout({ commit, state }) {
-    return new Promise((resolve, reject) => {
-      logout(state.token)
-        .then(() => {
-          removeToken(); // must remove  token  first
-          resetRouter();
-          commit("RESET_STATE");
-          resolve();
-        })
-        .catch(error => {
-          reject(error);
-        });
-    });
-  },
-
-  // user logout 的async/await写法
-  // async logout(miniStore, { state }) {
-  //   try {
-  //     await logout(state.token);
-  //     removeToken(); // must remove  token  first
-  //     resetRouter();
-  //     miniStore.commit("RESET_STATE");
-  //     resolve();
-  //   } catch (e) {
-  //     return Promise.reject(e);
-  //   }
-  // },
-
-  // remove token
-  resetToken({ commit }) {
-    return new Promise(resolve => {
-      removeToken(); // must remove  token  first
+  async logout({ commit, state }) {
+    const re = await logout(state.token);
+    if (re.code === 20000 || re.code === 200) {
+      localStorage.removeItem("token_key");
+      resetRouter();
       commit("RESET_STATE");
-      resolve();
-    });
+    } else {
+      return Promise.reject(new Error("error"));
+    }
+  },
+
+  resetToken({ commit }) {
+    localStorage.removeItem("token_key");
+    commit("RESET_STATE");
   }
 };
 
 const mutations = {
   RESET_STATE: state => {
-    Object.assign(state, getDefaultState());
+    state.token = "";
+    state.name = "";
+    state.avatar = "";
+    state.buttons = [];
+    state.roles = [];
+    state.routes = [];
   },
+
   SET_TOKEN: (state, token) => {
     state.token = token;
   },
-  SET_NAME: (state, name) => {
-    state.name = name;
+  SET_USERINFO: (state, userInfo) => {
+    state.name = userInfo.name;
+    state.avatar = userInfo.avatar;
+    state.buttons = userInfo.buttons;
+    state.roles = userInfo.roles;
   },
-  SET_AVATAR: (state, avatar) => {
-    state.avatar = avatar;
+  SET_ROUTERS: (state, asyncRouters) => {
+    state.routes = [...constantRoutes, ...asyncRouters, anyRoute];
+
+    router.addRoutes([...asyncRouters], anyRoute);
   }
 };
 
