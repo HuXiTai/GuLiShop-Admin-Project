@@ -64,6 +64,12 @@ export const allAsyncRoutes = [
         name: "Spu",
         component: () => import("@/views/product/Spu/List"),
         meta: { title: "Spu管理" }
+      },
+      {
+        path: "/scoped/list",
+        name: "Scoped",
+        component: () => import("@/views/product/Scoped/List"),
+        meta: { title: "Scoped测试" }
       }
     ]
   }
