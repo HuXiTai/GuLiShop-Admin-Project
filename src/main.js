@@ -45,6 +45,9 @@ Vue.config.productionTip = false;
 
 Vue.prototype.$api = api; //把api放到所有组件能访问到的地方
 
+import { textButton } from "@/utils/textButton";
+Vue.prototype.$textButton = textButton;
+
 new Vue({
   el: "#app",
   router,
