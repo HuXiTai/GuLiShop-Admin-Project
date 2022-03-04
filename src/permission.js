@@ -18,7 +18,11 @@ router.beforeEach(async (to, from, next) => {
   document.title = getPageTitle(to.meta.title);
 
   // determine whether the user has logged in
+<<<<<<< HEAD
   const hasToken = store.getters.token;
+=======
+  const hasToken = store.state.user.token;
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
 
   if (hasToken) {
     if (to.path === "/login") {
@@ -34,7 +38,11 @@ router.beforeEach(async (to, from, next) => {
           // get user info
           await store.dispatch("user/getInfo");
 
+<<<<<<< HEAD
           next({ ...to });
+=======
+          next();
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
         } catch (error) {
           // remove token and go to login page to re-login
           await store.dispatch("user/resetToken");
