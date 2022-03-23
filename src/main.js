@@ -17,11 +17,20 @@ import "@/permission"; // permission control
 
 import * as api from "@/api"; //引入所有api
 
+import "@/plugins/echarts"; //执行echarts配置
+
+import "@/mock"; //执行mock配置
+
+import "@/filters"; //执行自定义过滤器
+
 //全局注册组件
 import CategorySelector from "./components/CategorySelector";
 Vue.component("CategorySelector", CategorySelector);
 import HintButton from "./components/HintButton";
 Vue.component("HintButton", HintButton);
+
+import PublicCard from "./components/PublicCard";
+Vue.component("PublicCard", PublicCard);
 
 /**
  * If you don't want to use mock-server
