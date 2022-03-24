@@ -24,32 +24,36 @@
         </el-col>
       </el-row>
 
-      <el-table :data="echartsData.searchWord" style="width: 100%">
-        <el-table-column type="index" label="排名" width="80">
-        </el-table-column>
+      <div class="table">
+        <el-table :data="searchWord" style="width: 100%">
+          <el-table-column type="index" label="排名" width="80">
+          </el-table-column>
 
-        <el-table-column prop="word" label="关键字" width="width">
-        </el-table-column>
+          <el-table-column prop="word" label="关键字" width="width">
+          </el-table-column>
 
-        <el-table-column prop="count" label="搜索数量" width="width">
-        </el-table-column>
+          <el-table-column prop="count" label="搜索数量" width="width">
+          </el-table-column>
 
-        <el-table-column prop="user" label="搜索用户数" width="width">
-        </el-table-column>
+          <el-table-column prop="user" label="搜索用户数" width="width">
+          </el-table-column>
 
-        <el-table-column prop="mix" label="搜索占比" width="width">
-        </el-table-column>
-      </el-table>
+          <el-table-column prop="mix" label="搜索占比" width="width">
+          </el-table-column>
+        </el-table>
+      </div>
+
       <!-- @size-change="handleSizeChange"
     @current-change="handleCurrentChange" -->
       <el-pagination
         background
         style="text-align: center;"
-        :page-size="5"
+        layout="prev, pager, next , total"
+        :page-size="limit"
         :pager-count="5"
-        :current-page="1"
-        layout="prev, pager, next,total"
-        :total="1000"
+        :current-page="page"
+        :total="(echartsData.searchWord || []).length"
+        @current-change="handleCurrentChange"
       >
       </el-pagination>
     </el-card>
@@ -65,7 +69,9 @@ export default {
       key: [],
       searchNum: [],
       searchUserNum: [],
-      mix: []
+      mix: [],
+      page: 1,
+      limit: 5
     };
   },
   mounted() {
@@ -107,7 +113,7 @@ export default {
               color: "hotpink"
             },
             // lineStyle: {
-            //   opacity: 0
+            //   color: "greenyellow"
             // },
             smooth: true,
             areaStyle: {
@@ -161,6 +167,9 @@ export default {
           }
         ]
       };
+    },
+    handleCurrentChange(value) {
+      this.page = value;
     }
   },
   computed: {
@@ -176,6 +185,12 @@ export default {
         p += c.count;
         return p;
       }, 0);
+    },
+    searchWord() {
+      return (
+        this.echartsData.searchWord ||
+        [].slice((this.page - 1) * 5, this.page * 5)
+      );
     }
   },
   watch: {
@@ -217,6 +232,10 @@ export default {
 
   .el-pagination {
     margin-top: 20px;
+  }
+
+  .table {
+    height: 300px;
   }
 }
 </style>
