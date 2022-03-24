@@ -4,6 +4,7 @@ import {
   resetRouter,
   constantRoutes,
   allAsyncRoutes,
+<<<<<<< HEAD
   anyRoutes,
   default as router
 } from "@/router";
@@ -28,6 +29,33 @@ const state = {
   token: localStorage.getItem("token_key"),
   name: "",
   avatar: ""
+=======
+  anyRoute,
+  default as router
+} from "@/router";
+
+function filterAsyncRouters(allAsyncRoutes, routeNames) {
+  const asyncRoutes = allAsyncRoutes.filter(item => {
+    if (routeNames.includes(item.name)) {
+      if (item.children && item.children.length) {
+        item.children = filterAsyncRouters(item.children, routeNames);
+      }
+      return true;
+    }
+  });
+  return asyncRoutes;
+}
+
+const getDefaultState = () => {
+  return {
+    token: localStorage.getItem("token_key"),
+    name: "",
+    avatar: "",
+    buttons: [],
+    roles: [],
+    routes: []
+  };
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
 };
 
 const actions = {
@@ -47,11 +75,15 @@ const actions = {
     const re = await getInfo(state.token);
     if (re.code === 20000 || re.code === 200) {
       commit("SET_USERINFO", re.data);
+<<<<<<< HEAD
       commit(
         "SET_ROUTES",
         filtersAllAsyncRoutes(cloneDeep(allAsyncRoutes), re.data.routes)
       );
       return "ok";
+=======
+      commit("SET_ROUTERS", filterAsyncRouters(allAsyncRoutes, re.data.routes));
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
     } else {
       return Promise.reject(new Error("error"));
     }
@@ -63,13 +95,20 @@ const actions = {
       localStorage.removeItem("token_key");
       resetRouter();
       commit("RESET_STATE");
+<<<<<<< HEAD
       return "ok";
+=======
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
     } else {
       return Promise.reject(new Error("error"));
     }
   },
 
+<<<<<<< HEAD
   async resetToken({ commit }) {
+=======
+  resetToken({ commit }) {
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
     localStorage.removeItem("token_key");
     commit("RESET_STATE");
   }
@@ -84,21 +123,32 @@ const mutations = {
     state.roles = [];
     state.routes = [];
   },
+
   SET_TOKEN: (state, token) => {
     state.token = token;
   },
+<<<<<<< HEAD
 
+=======
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
   SET_USERINFO: (state, userInfo) => {
     state.name = userInfo.name;
     state.avatar = userInfo.avatar;
     state.buttons = userInfo.buttons;
     state.roles = userInfo.roles;
   },
+<<<<<<< HEAD
 
   SET_ROUTES: (state, asyncRoutes) => {
     state.routes = [...constantRoutes, ...asyncRoutes, anyRoutes];
 
     router.addRoutes([...asyncRoutes, anyRoutes]);
+=======
+  SET_ROUTERS: (state, asyncRouters) => {
+    state.routes = [...constantRoutes, ...asyncRouters, anyRoute];
+
+    router.addRoutes([...asyncRouters], anyRoute);
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
   }
 };
 

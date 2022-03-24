@@ -6,6 +6,10 @@ Vue.use(Router);
 /* Layout */
 import Layout from "@/layout";
 
+<<<<<<< HEAD
+=======
+//常量路由
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
 export const constantRoutes = [
   {
     path: "/login",
@@ -34,6 +38,10 @@ export const constantRoutes = [
   }
 ];
 
+<<<<<<< HEAD
+=======
+//异步路由
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
 export const allAsyncRoutes = [
   {
     path: "/product",
@@ -144,7 +152,12 @@ export const allAsyncRoutes = [
   }
 ];
 
+<<<<<<< HEAD
 export const anyRoutes = { path: "*", redirect: "/404", hidden: true };
+=======
+//任意路由
+export const anyRoute = { path: "*", redirect: "/404", hidden: true };
+>>>>>>> bb67d2dfa5699bf056a87e0e1de606fa135323eb
 
 const createRouter = () =>
   new Router({
